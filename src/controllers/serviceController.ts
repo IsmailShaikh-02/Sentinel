@@ -75,3 +75,15 @@ export async function manualCheck(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
+
+export async function serviceStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+try {
+  const serviceId =  requireUuidParam(req, "id");
+  await repo.getServiceById(requireUserId(req), serviceId);
+  const outcome =  await runCheck(requireUserId(req), serviceId);
+
+  res.json({ oka: outcome.ok, statusCode: outcome.statusCode});
+} catch (err) {
+  next(err);
+}  
+}

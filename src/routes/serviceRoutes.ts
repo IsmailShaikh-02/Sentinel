@@ -13,5 +13,6 @@ router.get("/:id", validate(uuidParamSchema, "params"), svc.getService);
 router.patch("/:id", validate(uuidParamSchema, "params"), validate(updateServiceSchema), svc.updateService);
 router.delete("/:id", validate(uuidParamSchema, "params"), svc.deleteService);
 router.post("/:id/check", validate(uuidParamSchema, "params"), svc.manualCheck);
+router.get("/:id/status", validate(uuidParamSchema, "params"), svc.serviceStatus)
 
 export default router;
