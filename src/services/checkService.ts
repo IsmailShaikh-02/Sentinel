@@ -1,6 +1,6 @@
 import { pool } from "../db/pool.js";
 import { NotFoundError } from "../errors.js";
-import { getServiceById, type ServiceRow } from "../repositories/serviceRepository.js";
+import { getServiceById, getServiceByIdInternal, type ServiceRow } from "../repositories/serviceRepository.js";
 
 export interface CheckOutcome {
   statusCode: number | null;
@@ -8,9 +8,13 @@ export interface CheckOutcome {
   ok: boolean;
 }
 
-export async function runCheck(userId: string, serviceId: string): Promise<CheckOutcome> {
-  const service: ServiceRow = await getServiceById(userId, serviceId);
-
+/**
+ * The domain capability: probe a service and record the outcome.
+ * Caller is responsible for ensuring the actor is allowed to check this service:
+ *  - HTTP path: runAuthorizedCheck enforces user ownership
+ *  - Worker path: runWorkerCheck, authorized by being the system itself
+ */
+async function performCheck(service: ServiceRow): Promise<CheckOutcome> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5_000);
   const startedAt = Date.now();
@@ -23,7 +27,6 @@ export async function runCheck(userId: string, serviceId: string): Promise<Check
       redirect: "follow",
     });
     const responseTimeMs = Date.now() - startedAt;
-    // Consume body so the socket is released; don't load it all into memory
     await response.arrayBuffer();
     outcome = {
       statusCode: response.status,
@@ -31,7 +34,6 @@ export async function runCheck(userId: string, serviceId: string): Promise<Check
       ok: response.status === service.expected_status,
     };
   } catch {
-    // Network failure / timeout / DNS error — still append a check row
     outcome = { statusCode: null, responseTimeMs: null, ok: false };
   } finally {
     clearTimeout(timeout);
@@ -43,4 +45,16 @@ export async function runCheck(userId: string, serviceId: string): Promise<Check
   );
 
   return outcome;
+}
+
+/** HTTP path — ownership enforced: service must belong to userId. */
+export async function runCheck(userId: string, serviceId: string): Promise<CheckOutcome> {
+  const service = await getServiceById(userId, serviceId);
+  return performCheck(service);
+}
+
+/** Worker path — the system polls its own registered services. */
+export async function runWorkerCheck(serviceId: string): Promise<CheckOutcome> {
+  const service = await getServiceByIdInternal(serviceId);
+  return performCheck(service);
 }

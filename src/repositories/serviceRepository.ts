@@ -84,3 +84,14 @@ export async function deleteService(userId: string, serviceId: string): Promise<
   );
   if (result.rowCount === 0) throw new NotFoundError("Service not found");
 }
+
+/** Internal: fetch by id only — callers must justify why user-scoping doesn't apply. */
+export async function getServiceByIdInternal(serviceId: string): Promise<ServiceRow> {
+  const result = await pool.query<ServiceRow>(
+    "SELECT * FROM services WHERE id = $1",
+    [serviceId],
+  );
+  const service = result.rows[0];
+  if (!service) throw new NotFoundError("Service not found");
+  return service;
+}
