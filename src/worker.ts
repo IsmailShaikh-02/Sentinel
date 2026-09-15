@@ -4,6 +4,7 @@ import { runWorkerCheck } from "./services/checkService.js";
 import { CHECK_QUEUE_NAME, syncRepeatableJobs } from "./queue/checkQueue.js";
 import { redisConnection } from "./queue/redisConnection.js";
 import type { CheckJobData } from "./queue/types.js";
+import { incidentAnalyzer } from "./services/incidentService.js";
 import { env } from "./env.js";
 
 const worker = new Worker<CheckJobData>(
@@ -12,6 +13,12 @@ const worker = new Worker<CheckJobData>(
     console.log(`[worker] checking ${job.data.serviceId} (trigger: ${job.data.trigger ?? "schedule"})`);
     const outcome = await runWorkerCheck(job.data.serviceId);
     console.log(`[worker] ${job.data.serviceId}: ok=${outcome.ok} status=${outcome.statusCode} time=${outcome.responseTimeMs}ms`);
+
+    const incidentDecision = await incidentAnalyzer.analyzeForIncidents(job.data.serviceId);
+    if (incidentDecision.action !== "none") {
+      console.log(`[worker] INCIDENT: ${incidentDecision.action} - ${incidentDecision.reason}`);
+    }
+
     return outcome;
   },
   { connection: redisConnection, concurrency: 10 },

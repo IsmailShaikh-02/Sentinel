@@ -32,6 +32,31 @@ async function migrate(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_checks_service_time
       ON checks (service_id, checked_at DESC);
+
+    CREATE TABLE IF NOT EXISTS incidents (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      service_id  UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+      started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      resolved_at TIMESTAMPTZ,
+      severity    TEXT NOT NULL CHECK (severity IN ('low', 'medium', 'high')),
+      summary     TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_incidents_service_active ON incidents(service_id) WHERE resolved_at IS NULL;
+
+    CREATE TABLE IF NOT EXISTS channels (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      type       TEXT NOT NULL CHECK (type IN ('telegram', 'slack', 'email')),
+      config     JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS alerts_sent (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      incident_id UUID NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+      channel_id  UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      sent_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(incident_id, channel_id)
+    );
   `);
   console.log("Migration complete");
 }

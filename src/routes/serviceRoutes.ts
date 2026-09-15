@@ -4,6 +4,8 @@ import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { createServiceSchema, updateServiceSchema, uuidParamSchema } from "../validation.js";
 
+import * as incidentController from "../controllers/incidentController.js";
+
 const router = Router();
 router.use(requireAuth);
 
@@ -13,6 +15,7 @@ router.get("/:id", validate(uuidParamSchema, "params"), svc.getService);
 router.patch("/:id", validate(uuidParamSchema, "params"), validate(updateServiceSchema), svc.updateService);
 router.delete("/:id", validate(uuidParamSchema, "params"), svc.deleteService);
 router.post("/:id/check", validate(uuidParamSchema, "params"), svc.manualCheck);
-router.get("/:id/status", validate(uuidParamSchema, "params"), svc.serviceStatus)
+router.get("/:id/status", validate(uuidParamSchema, "params"), svc.serviceStatus);
+router.get("/:id/incidents", validate(uuidParamSchema, "params"), incidentController.getServiceIncidents);
 
 export default router;

@@ -1,6 +1,7 @@
 import { pool } from "../db/pool.js";
 import { NotFoundError } from "../errors.js";
 import { getServiceById, getServiceByIdInternal, type ServiceRow } from "../repositories/serviceRepository.js";
+import { incidentAnalyzer } from "./incidentService.js";
 
 export interface CheckOutcome {
   statusCode: number | null;
@@ -43,6 +44,8 @@ async function performCheck(service: ServiceRow): Promise<CheckOutcome> {
     "INSERT INTO checks (service_id, status_code, response_time_ms, ok) VALUES ($1, $2, $3, $4)",
     [service.id, outcome.statusCode, outcome.responseTimeMs, outcome.ok],
   );
+
+  await incidentAnalyzer.analyzeForIncidents(service.id);
 
   return outcome;
 }

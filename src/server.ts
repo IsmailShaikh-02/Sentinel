@@ -3,6 +3,7 @@ import { pool } from "./db/pool.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRouter from "./routes/authRoutes.js";
 import serviceRouter from "./routes/serviceRoutes.js";
+import incidentRouter from "./routes/incidentRoutes.js";
 import { env } from "./env.js";
 
 const app = express();
@@ -10,6 +11,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/services", serviceRouter);
+app.use("/api/incidents", incidentRouter);
 
 app.use(errorHandler);
 

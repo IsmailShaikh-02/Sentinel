@@ -2,6 +2,7 @@ import { Queue } from "bullmq";
 import { pool } from "../db/pool.js";
 import { redisConnection } from "./redisConnection.js";
 import type { CheckJobData } from "./types.js";
+import { listActiveIncidents, type ActiveIncident } from "../repositories/incidentRepository.js";
 
 export const CHECK_QUEUE_NAME = "checks";
 
@@ -56,4 +57,9 @@ export async function enqueueImmediateCheck(serviceId: string): Promise<string |
     { jobId: `manual-${serviceId}-${Date.now()}` },
   );
   return job.id;
+}
+
+// Export this for the dashboard's incident listing
+export async function listActiveIncidentsForUser(userId: string): Promise<ActiveIncident[]> {
+  return listActiveIncidents(userId);
 }
