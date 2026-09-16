@@ -1,7 +1,19 @@
-import pg from "pg";
-import { env } from "../env.js";
+import pg from 'pg';
+import { env } from '../env.js';
 
-export const pool = new pg.Pool({
+const { Pool } = pg;
+
+export const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  ssl: env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+  ssl: {
+    rejectUnauthorized: false, // Required for Neon serverless SSL connection
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client', err);
+  process.exit(1);
 });
