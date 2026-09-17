@@ -2,6 +2,7 @@ import { pool } from '../../db/pool.js';
 import { NotFoundError } from '../../errors/http.error.js';
 import type { CreateServiceInput, UpdateServiceInput } from './service.schema.js';
 import { probeUrl } from './checker.js';
+import { SchedulerService } from '../scheduler/scheduler.service.js';
 
 export interface ServiceRecord {
   id: string;
@@ -34,7 +35,14 @@ export class ServiceManager {
       [userId, name, url, method, expected_status, check_interval_sec, enabled]
     );
 
-    return result.rows[0];
+    const service =  result.rows[0];
+
+    // Synchronize with Redis scheduler if enabled
+    if (service.enabled) {
+      await SchedulerService.scheduleService(service.id, service.check_interval_sec);
+    }
+
+    return service;
   }
 
   static async getById(userId: string, serviceId: string): Promise<ServiceRecord> {
@@ -92,7 +100,16 @@ export class ServiceManager {
       throw new NotFoundError('Service not found');
     }
 
-    return result.rows[0];
+    const updated = result.rows[0];
+
+    // Synchronize scheduler with updated state
+    if (updated.enabled) {
+      await SchedulerService.scheduleService(updated.id, updated.check_interval_sec);
+    } else {
+      await SchedulerService.removeService(updated.id);
+    }
+
+    return updated;
   }
 
   static async delete(userId: string, serviceId: string): Promise<void> {
@@ -106,6 +123,8 @@ export class ServiceManager {
     if (result.rowCount === 0) {
       throw new NotFoundError('Service not found');
     }
+    // Remove job from Redis
+    await SchedulerService.removeService(serviceId);
   }
 
 //Fetch the service record while verifying user ownership via getById(userId, serviceId). 

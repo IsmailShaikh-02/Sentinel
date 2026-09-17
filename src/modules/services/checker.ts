@@ -13,6 +13,7 @@ export async function probeUrl(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  //uses the CPU's monotonic clock, measuring precise elapsed time independent of system clock shifts
   const startTime = performance.now();
 
   try {
