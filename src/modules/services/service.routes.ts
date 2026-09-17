@@ -18,5 +18,5 @@ router.get('/', ServiceController.list);
 router.get('/:id', validate(serviceIdParamSchema), ServiceController.getById);
 router.patch('/:id', validate(updateServiceSchema), ServiceController.update);
 router.delete('/:id', validate(serviceIdParamSchema), ServiceController.delete);
-
+router.post('/:id/check', validate(serviceIdParamSchema), ServiceController.check);
 export const serviceRoutes = router;

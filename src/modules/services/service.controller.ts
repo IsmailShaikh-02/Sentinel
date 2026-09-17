@@ -49,4 +49,14 @@ export class ServiceController {
       next(error);
     }
   }
+
+  // check controller
+  static async check(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void>{
+    try{
+      const checked = await ServiceManager.runManualCheck(req.userId!, req.params.id);
+      res.status(200).json(checked);
+    }catch(error){
+      next(error);
+    }
+  }
 }

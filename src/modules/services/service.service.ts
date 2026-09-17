@@ -1,6 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { NotFoundError } from '../../errors/http.error.js';
 import type { CreateServiceInput, UpdateServiceInput } from './service.schema.js';
+import { probeUrl } from './checker.js';
 
 export interface ServiceRecord {
   id: string;
@@ -12,6 +13,14 @@ export interface ServiceRecord {
   check_interval_sec: number;
   enabled: boolean;
   created_at: string;
+}
+export interface CheckRecord {
+  id: string;
+  service_id: string;
+  status_code: number | null;
+  response_time_ms: number;
+  ok: boolean;
+  checked_at: string;
 }
 
 export class ServiceManager {
@@ -97,5 +106,24 @@ export class ServiceManager {
     if (result.rowCount === 0) {
       throw new NotFoundError('Service not found');
     }
+  }
+
+//Fetch the service record while verifying user ownership via getById(userId, serviceId). 
+  static async runManualCheck(userId: string, serviceId: string): Promise<CheckRecord> {
+    // 1. Scoped ownership check: verify the service belongs to this user
+    const service = await ServiceManager.getById(userId, serviceId);
+
+    // 2. Perform the probe with 5s timeout
+    const probe = await probeUrl(service.url, service.method, service.expected_status, 5000);
+
+    // 3. Append-only insert into checks table
+    const result = await pool.query<CheckRecord>(
+      `INSERT INTO checks (service_id, status_code, response_time_ms, ok)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, service_id, status_code, response_time_ms, ok, checked_at`,
+      [service.id, probe.statusCode, probe.responseTimeMs, probe.ok]
+    );
+
+    return result.rows[0];
   }
 }
