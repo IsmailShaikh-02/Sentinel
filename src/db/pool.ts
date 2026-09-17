@@ -10,10 +10,10 @@ export const pool = new Pool({
   },
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000, // Increased to 10s to handle Neon cold-start wakeups
+  keepAlive: true,
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle PostgreSQL client', err);
-  process.exit(1);
+  console.error('Unexpected error on idle PostgreSQL client:', err);
 });
