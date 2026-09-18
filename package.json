@@ -7,6 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "worker": "tsx watch src/worker.ts",
     "fleet": "tsx src/scripts/toy-fleet.ts",
+    "clean:services": "tsx src/scripts/clean-services.ts",
+    "clean:redis": "tsx src/scripts/clean-redis.ts",
+    "clean:all": "npm run clean:services && npm run clean:redis",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "migrate": "tsx src/db/migrate.ts"

@@ -1,3 +1,4 @@
+// src/db/migrate.ts
 import { pool } from './pool.js';
 
 async function migrate() {
@@ -47,10 +48,61 @@ async function migrate() {
       );
     `);
 
-    // 5. Index for fast windowed & chronological queries
+    // 5. Index on checks
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_checks_service_time 
       ON checks (service_id, checked_at DESC);
+    `);
+
+    // 6. Incidents table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS incidents (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+        summary TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'critical',
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        resolved_at TIMESTAMPTZ,
+        checks_triggered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Ensure the column exists if the table was created earlier without it
+    await client.query(`
+      ALTER TABLE incidents 
+      ADD COLUMN IF NOT EXISTS checks_triggered_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    `);
+
+    // Indexes for incidents
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_incidents_active 
+      ON incidents (service_id) 
+      WHERE resolved_at IS NULL;
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_incidents_timeline 
+      ON incidents (started_at DESC, severity);
+    `);
+
+    // Drop old constraint first so we can normalize existing data
+    await client.query(`
+      ALTER TABLE incidents 
+      DROP CONSTRAINT IF EXISTS incidents_severity_check;
+    `);
+
+    // Normalize any dirty existing rows to lowercase 'critical'
+    await client.query(`
+      UPDATE incidents 
+      SET severity = 'critical' 
+      WHERE severity NOT IN ('critical', 'warning') OR severity IS NULL;
+    `);
+
+    // Now safely attach the constraint
+    await client.query(`
+      ALTER TABLE incidents 
+      ADD CONSTRAINT incidents_severity_check 
+      CHECK (severity IN ('critical', 'warning'));
     `);
 
     await client.query('COMMIT');
