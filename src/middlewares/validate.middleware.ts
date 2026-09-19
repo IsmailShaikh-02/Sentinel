@@ -18,9 +18,23 @@ export const validate = (schema: ZodType) => {
         params?: ParamsDictionary;
       };
 
-      if (data.body !== undefined) req.body = data.body;
-      if (data.query !== undefined) req.query = data.query;
-      if (data.params !== undefined) req.params = data.params;
+      // req.body can be reassigned directly
+      if (data.body !== undefined) {
+        req.body = data.body;
+      }
+
+      // req.query has only a getter on IncomingMessage: mutate its keys in place
+      if (data.query !== undefined) {
+        for (const key of Object.keys(req.query)) {
+          delete (req.query as Record<string, unknown>)[key];
+        }
+        Object.assign(req.query, data.query);
+      }
+
+      // req.params can be assigned or safely merged
+      if (data.params !== undefined) {
+        req.params = data.params;
+      }
 
       next();
     } catch (error) {

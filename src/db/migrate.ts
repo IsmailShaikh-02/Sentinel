@@ -67,6 +67,17 @@ async function migrate() {
       );
     `);
 
+    // 7. Alerts sent (deduplication ledger)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS alerts_sent (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        incident_id UUID NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+        alert_type TEXT NOT NULL, -- 'OPEN' or 'RESOLVE'
+        sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_incident_alert UNIQUE (incident_id, alert_type)
+      );
+    `);
+    
     // Ensure the column exists if the table was created earlier without it
     await client.query(`
       ALTER TABLE incidents 

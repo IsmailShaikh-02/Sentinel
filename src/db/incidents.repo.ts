@@ -8,6 +8,10 @@ export interface ActiveIncident {
   severity: string;
   started_at: string;
 }
+export interface IncidentTargetMetadata {
+  url: string;
+  userEmail: string;
+}
 
 /**
  * Returns the active (unresolved) incident for a service, if one exists.
@@ -73,6 +77,21 @@ export async function determineRecoveryStreak(
   return result.rows[0]?.is_recovered ?? false;
 }
 
+/**
+ * Retrieves the target URL and the owner's email address for a given service ID
+ */
+export async function getServiceTargetMetadata(serviceId: string): Promise<IncidentTargetMetadata | null> {
+  const result = await pool.query<IncidentTargetMetadata>(
+    `SELECT s.url, u.email AS "userEmail"
+     FROM services s
+     JOIN users u ON s.user_id = u.id
+     WHERE s.id = $1`,
+    [serviceId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
 export class IncidentRepo {
   /**
    * Opens a new incident safely inside a transaction with row-level locks.
@@ -117,7 +136,7 @@ export class IncidentRepo {
       client.release();
     }
   }
-  
+
   /**
    * Resolves an open incident safely inside a transaction.
    */
