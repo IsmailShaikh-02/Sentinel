@@ -27,11 +27,13 @@ async function migrate() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
-        url TEXT NOT NULL,
+        url TEXT,
+        type TEXT NOT NULL DEFAULT 'http' CHECK (type IN ('http', 'heartbeat')),
         method TEXT NOT NULL DEFAULT 'GET',
         expected_status INT NOT NULL DEFAULT 200,
         check_interval_sec INT NOT NULL DEFAULT 60,
         enabled BOOLEAN NOT NULL DEFAULT true,
+        heartbeat_key TEXT UNIQUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
@@ -77,7 +79,7 @@ async function migrate() {
         CONSTRAINT uq_incident_alert UNIQUE (incident_id, alert_type)
       );
     `);
-    
+
     // Ensure the column exists if the table was created earlier without it
     await client.query(`
       ALTER TABLE incidents 
@@ -109,11 +111,54 @@ async function migrate() {
       WHERE severity NOT IN ('critical', 'warning') OR severity IS NULL;
     `);
 
-    // Now safely attach the constraint
+    // Safely attach the constraint
     await client.query(`
       ALTER TABLE incidents 
       ADD CONSTRAINT incidents_severity_check 
       CHECK (severity IN ('critical', 'warning'));
+    `);
+
+    // Ensure type column exists on pre-existing services table
+    await client.query(`
+      ALTER TABLE services 
+      ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'http' 
+      CHECK (type IN ('http', 'heartbeat'));
+    `);
+
+    // Ensure url is nullable for passive heartbeats
+    await client.query(`
+      ALTER TABLE services 
+      ALTER COLUMN url DROP NOT NULL;
+    `);
+
+    // Ensure heartbeat_key column exists
+    await client.query(`
+      ALTER TABLE services 
+      ADD COLUMN IF NOT EXISTS heartbeat_key TEXT UNIQUE;
+    `);
+
+    // Drop default generation so active HTTP checks remain NULL
+    await client.query(`
+      ALTER TABLE services 
+      ALTER COLUMN heartbeat_key DROP DEFAULT;
+    `);
+
+    // Clean up existing active HTTP services to have NULL heartbeat_key
+    await client.query(`
+      UPDATE services 
+      SET heartbeat_key = NULL 
+      WHERE type = 'http';
+    `);
+
+    // Partial index for fast O(1) heartbeat ping lookups
+    await client.query(`
+      DROP INDEX IF EXISTS idx_services_heartbeat_key;
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_services_heartbeat_key 
+      ON services (heartbeat_key) 
+      WHERE heartbeat_key IS NOT NULL;
     `);
 
     await client.query('COMMIT');

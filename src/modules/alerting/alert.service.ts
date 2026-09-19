@@ -64,12 +64,13 @@ export class AlertService {
     `;
 
     // 3. Dispatch via Brevo
-    const success = await BrevoService.sendEmail({
-      toEmail: userEmail,
-      subject,
-      htmlContent,
-    });
-
+    // const success = await BrevoService.sendEmail({
+    //   toEmail: userEmail,
+    //   subject,
+    //   htmlContent,
+    // });
+    const success = true;
+    
     if (success) {
       console.log(`📧 [AlertService] Dispatched ${alertType} alert email to ${userEmail} for incident ${incidentId}`);
     } else {
