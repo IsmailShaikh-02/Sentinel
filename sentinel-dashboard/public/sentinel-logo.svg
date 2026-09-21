@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- Rounded white background -->
+  <rect
+    x="4"
+    y="4"
+    width="232"
+    height="232"
+    rx="52"
+    fill="#FFFFFF"
+    stroke="#DCE5E1"
+    stroke-width="5"
+  />
+
+  <!-- Outer ring -->
+  <circle
+    cx="120"
+    cy="120"
+    r="78"
+    fill="none"
+    stroke="#0B5D45"
+    stroke-width="17"
+    stroke-linecap="round"
+    stroke-dasharray="421 82"
+  />
+
+  <!-- Inner ring -->
+  <circle
+    cx="120"
+    cy="120"
+    r="43"
+    fill="none"
+    stroke="#16805F"
+    stroke-width="17"
+    stroke-linecap="round"
+    stroke-dasharray="232 38"
+    stroke-dashoffset="116"
+  />
+
+  <!-- Center dot -->
+  <circle
+    cx="120"
+    cy="120"
+    r="13"
+    fill="#42C99A"
+  />
+</svg>

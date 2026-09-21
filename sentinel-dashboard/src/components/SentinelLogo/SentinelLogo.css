@@ -1,0 +1,32 @@
+
+.santura-logo {
+  display: block;
+}
+
+.santura-outer-ring,
+.santura-inner-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.santura-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/*
+  The rotation itself is controlled by React
+  using requestAnimationFrame.
+
+  No CSS animation timing is required here.
+*/
+
+/*
+  Respect users who prefer reduced motion.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .santura-outer-ring,
+  .santura-inner-ring {
+    transition: none;
+  }
+}

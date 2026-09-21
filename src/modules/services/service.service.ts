@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool.js';
-import { NotFoundError, UnprocessableEntityError } from '../../errors/http.error.js';
+import { ConflictError, NotFoundError, UnprocessableEntityError } from '../../errors/http.error.js';
 import type { CreateServiceInput, UpdateServiceInput } from './service.schema.js';
 import { probeUrl } from './checker.js';
 import { SchedulerService } from '../scheduler/scheduler.service.js';
@@ -31,43 +31,79 @@ export interface CheckRecord {
 
 export class ServiceManager {
   static async create(userId: string, input: CreateServiceInput): Promise<ServiceRecord> {
-    const { name, type, url, method, expected_status, check_interval_sec, enabled } = input;
+    const {
+      name,
+      type = 'http',
+      url,
+      method = 'GET',
+      expected_status = 200,
+      check_interval_sec = 60,
+      enabled = true,
+    } = input;
 
-    // Generate heartbeat_key ONLY for passive heartbeat monitors
-    const heartbeatKey = type === 'heartbeat' ? crypto.randomBytes(16).toString('hex') : null;
-    
-    const result = await pool.query<ServiceRecord>(
-      `INSERT INTO services (
-        user_id, name, type, url, method, expected_status, 
-        check_interval_sec, enabled, heartbeat_key
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [
-        userId,
-        name,
-        type,
-        url ?? null,
-        method,
-        expected_status,
-        check_interval_sec,
-        enabled,
-        heartbeatKey,
-      ]
-    );
+    const client = await pool.connect();
 
-    const service = result.rows[0];
+    try {
+      await client.query('BEGIN');
 
-    // Only active HTTP monitors are registered for outbound polling
-    if (service.enabled && service.type === 'http') {
-      await SchedulerService.scheduleService(service.id, service.check_interval_sec);
-    } else if(service.type === 'heartbeat' && service.enabled){
-      await SchedulerService.reconcileHeartbeatSweeper();
+      // 1. Hard Quota Check: Scoped strictly to the authenticated user
+      const countResult = await client.query<{ count: number }>(
+        `SELECT COUNT(*)::int AS count 
+         FROM services 
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      const currentServiceCount = countResult.rows[0]?.count ?? 0;
+      if (currentServiceCount >= 10) {
+        throw new ConflictError('Service limit reached (maximum 10 services per account)');
+      }
+
+      // 2. Generate secret key only for passive push monitors
+      const heartbeatKey = type === 'heartbeat' 
+        ? crypto.randomBytes(16).toString('hex') 
+        : null;
+
+      // 3. Insert new service record
+      const result = await client.query<ServiceRecord>(
+        `INSERT INTO services (
+          user_id, name, type, url, method, expected_status, 
+          check_interval_sec, enabled, heartbeat_key
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        [
+          userId,
+          name,
+          type,
+          url ?? null,
+          method,
+          expected_status,
+          check_interval_sec,
+          enabled,
+          heartbeatKey,
+        ]
+      );
+
+      await client.query('COMMIT');
+
+      const service = result.rows[0];
+
+      // 4. Synchronize schedulers outside the database transaction
+      if (service.enabled && service.type === 'http') {
+        await SchedulerService.scheduleService(service.id, service.check_interval_sec);
+      } else if (service.enabled && service.type === 'heartbeat') {
+        await SchedulerService.reconcileHeartbeatSweeper();
+      }
+
+      return service;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return service;
   }
-
   static async getById(userId: string, serviceId: string): Promise<ServiceRecord> {
     const result = await pool.query<ServiceRecord>(
       `SELECT * FROM services 
@@ -84,9 +120,21 @@ export class ServiceManager {
 
   static async listAll(userId: string): Promise<ServiceRecord[]> {
     const result = await pool.query<ServiceRecord>(
-      `SELECT * FROM services 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC`,
+      `SELECT s.*,
+              lc.ok AS last_check_ok,
+              lc.status_code AS last_status_code,
+              lc.response_time_ms AS last_response_time_ms,
+              lc.checked_at AS last_checked_at
+       FROM services s
+       LEFT JOIN LATERAL (
+         SELECT ok, status_code, response_time_ms, checked_at
+         FROM checks
+         WHERE service_id = s.id
+         ORDER BY checked_at DESC
+         LIMIT 1
+       ) lc ON true
+       WHERE s.user_id = $1 
+       ORDER BY s.created_at DESC`,
       [userId]
     );
 

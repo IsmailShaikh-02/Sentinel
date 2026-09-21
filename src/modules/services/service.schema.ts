@@ -15,7 +15,7 @@ export const createServiceSchema = z.object({
       check_interval_sec: z.coerce
         .number()
         .int()
-        .min(10, 'Interval must be at least 10 seconds')
+        .min(30, 'Interval must be at least 30 seconds')
         .default(60),
       enabled: z.boolean().default(true),
     })
@@ -45,10 +45,9 @@ export const updateServiceSchema = z.object({
     check_interval_sec: z.coerce
       .number()
       .int()
-      .min(10, 'Interval must be at least 10 seconds')
+      .min(30, 'Interval must be at least 30 seconds')
       .optional(),
     enabled: z.boolean().optional(),
-    // 'type' is intentionally omitted: immutable after creation
   }),
 });
 
