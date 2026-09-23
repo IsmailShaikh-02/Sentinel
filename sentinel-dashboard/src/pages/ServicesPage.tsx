@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Server, Activity, PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { KPICard } from "@/components/dashboard/KPICard";
 import { ServiceTable } from "@/components/services/ServiceTable";
 import { CreateServiceModal } from "@/components/services/CreateServiceModal";
 import { useServices } from "@/hooks/useServices";
@@ -35,45 +35,32 @@ export function ServicesPage() {
 
       {/* Metrics Summary Row */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Total Endpoints
-            </CardTitle>
-            <Server className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totalCount}</div>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Total Endpoints"
+          value={totalCount}
+          icon={Server}
+          variant="mint"
+          isLoading={isLoading}
+          subtext="Configured targets"
+        />
 
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Active Polling
-            </CardTitle>
-            <Activity className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {activeCount}
-            </div>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Active Polling"
+          value={activeCount}
+          icon={Activity}
+          variant="teal"
+          isLoading={isLoading}
+          subtext="Enabled & scheduled probes"
+        />
 
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">
-              Paused Checks
-            </CardTitle>
-            <PauseCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-muted-foreground">
-              {pausedCount}
-            </div>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Paused Checks"
+          value={pausedCount}
+          icon={PauseCircle}
+          variant="default"
+          isLoading={isLoading}
+          subtext="Monitoring disabled"
+        />
       </div>
 
       {/* Error state */}

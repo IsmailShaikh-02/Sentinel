@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableHeader,
@@ -36,6 +37,7 @@ interface ServiceTableProps {
 }
 
 export function ServiceTable({ services, isLoading }: ServiceTableProps) {
+  const navigate = useNavigate();
   const updateMutation = useUpdateService();
   const manualCheckMutation = useManualCheck();
 
@@ -98,7 +100,6 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
         </div>
       )}
 
-      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -112,7 +113,11 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
           </TableHeader>
           <TableBody>
             {services.map((service) => (
-              <TableRow key={service.id}>
+              <TableRow
+                key={service.id}
+                onClick={() => navigate(`/services/${service.id}`)}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+              >
                 {/* Service Name */}
                 <TableCell className="font-semibold text-foreground">
                   <div className="flex items-center gap-2">
@@ -121,7 +126,9 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
                     ) : (
                       <HeartPulse className="h-4 w-4 text-rose-500 shrink-0" />
                     )}
-                    <span>{service.name}</span>
+                    <span className="hover:underline hover:text-primary transition-colors">
+                      {service.name}
+                    </span>
                   </div>
                 </TableCell>
 
@@ -147,7 +154,7 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
                 </TableCell>
 
                 {/* Status & Toggle */}
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-3">
                     <StatusBadge
                       enabled={service.enabled}
@@ -156,7 +163,10 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
                     />
                     <button
                       type="button"
-                      onClick={() => handleToggleEnabled(service)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleEnabled(service);
+                      }}
                       title={service.enabled ? "Disable monitoring" : "Enable monitoring"}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                         service.enabled ? "bg-emerald-500" : "bg-muted-foreground/30"
@@ -172,7 +182,7 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
                 </TableCell>
 
                 {/* Actions Dropdown */}
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -201,7 +211,6 @@ export function ServiceTable({ services, isLoading }: ServiceTableProps) {
             ))}
           </TableBody>
         </Table>
-      </div>
 
       <EditServiceModal
         service={editingService}

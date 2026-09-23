@@ -59,4 +59,18 @@ export class ServiceController {
       next(error);
     }
   }
+
+  static async getRecentChecks(
+    req: Request<{ id: string }, unknown, unknown, { limit?: string }>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+      const checks = await ServiceManager.getRecentChecks(req.userId!, req.params.id, limit);
+      res.status(200).json(checks);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

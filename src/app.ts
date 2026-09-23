@@ -6,6 +6,7 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import { serviceRoutes } from './modules/services/service.routes.js';
 import { heartbeatRoutes } from './modules/heartbeat/heartbeat.routes.js';
 import { statusRoutes } from './modules/status/status.routes.js';
+import { incidentRoutes } from './modules/incidents/incidents.routes.js';
 import { generalLimiter } from './middlewares/rate-limit.middleware.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/api', generalLimiter);
 // Module routes
 app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/incidents', incidentRoutes);
 app.use('/api/ping', heartbeatRoutes);
 app.use('/api/status', statusRoutes);
 

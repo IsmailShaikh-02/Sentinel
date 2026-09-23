@@ -6,8 +6,6 @@ import {
   type UpdateServiceInput,
   type ManualCheckResult,
   manualCheckResultSchema,
-  type UptimeResponse,
-  uptimeResponseSchema,
 } from "@/schemas/service.schema";
 import { z } from "zod";
 
@@ -16,6 +14,13 @@ export const servicesApi = {
     return apiClient<Service[]>("/api/services", {
       method: "GET",
       schema: z.array(serviceSchema),
+    });
+  },
+
+  async getServiceById(id: string): Promise<Result<Service>> {
+    return apiClient<Service>(`/api/services/${id}`, {
+      method: "GET",
+      schema: serviceSchema,
     });
   },
 
@@ -45,13 +50,6 @@ export const servicesApi = {
     return apiClient<ManualCheckResult>(`/api/services/${id}/check`, {
       method: "POST",
       schema: manualCheckResultSchema,
-    });
-  },
-
-  async getServiceUptime(id: string, window: string = "24h"): Promise<Result<UptimeResponse>> {
-    return apiClient<UptimeResponse>(`/api/services/${id}/uptime?window=${window}`, {
-      method: "GET",
-      schema: uptimeResponseSchema,
     });
   },
 };

@@ -14,8 +14,8 @@ export const authLimiter = rateLimit({
 
 // General limiter for public or heavy routes
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per 15 minutes
+  windowMs: 10 * 60 * 1000, // 15 minutes
+  max: 200, // 100 requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: {

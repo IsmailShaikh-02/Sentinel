@@ -229,4 +229,20 @@ static async runManualCheck(userId: string, serviceId: string): Promise<CheckRec
 
   return result.rows[0];
 }
+
+  static async getRecentChecks(userId: string, serviceId: string, limit: number = 10): Promise<CheckRecord[]> {
+    // Ownership check
+    await ServiceManager.getById(userId, serviceId);
+
+    const result = await pool.query<CheckRecord>(
+      `SELECT id, service_id, status_code, response_time_ms, ok, checked_at
+       FROM checks
+       WHERE service_id = $1
+       ORDER BY checked_at DESC
+       LIMIT $2`,
+      [serviceId, limit]
+    );
+
+    return result.rows;
+  }
 }

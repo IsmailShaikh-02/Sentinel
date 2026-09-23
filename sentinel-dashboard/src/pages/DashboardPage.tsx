@@ -1,170 +1,151 @@
-import { Activity, Server, ShieldCheck, AlertTriangle, Cpu, HardDrive } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useServices } from "@/hooks/useServices";
+import { useIncidents } from "@/hooks/useIncidents";
+// import { useAuth } from "@/hooks/useAuth";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { ServiceHealthGrid } from "@/components/dashboard/ServiceHealthGrid";
+import { RecentIncidentsTable } from "@/components/dashboard/RecentIncidentsTable";
+import { Button } from "@/components/ui/button";
+import { Activity, AlertTriangle, RefreshCw, Server, ShieldCheck } from "lucide-react";
 
 export function DashboardPage() {
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  // const { user, logout } = useAuth();
+
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    isRefetching: isStatsRefetching,
+    refetch: refetchStats,
+  } = useDashboardStats();
+
+  const {
+    data: services,
+    isLoading: isServicesLoading,
+    refetch: refetchServices,
+  } = useServices();
+
+  const {
+    incidents,
+    isLoading: isIncidentsLoading,
+    refetch: refetchIncidents,
+  } = useIncidents();
+
+  const handleRefreshAll = async () => {
+    setIsManualRefreshing(true);
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchServices(),
+        refetchIncidents(),
+        new Promise((resolve) => setTimeout(resolve, 600)), // Ensure smooth shimmer animation
+      ]);
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
+
+  const isRefreshing = isManualRefreshing || isStatsRefetching;
+  const showShimmer = isRefreshing || isStatsLoading || isServicesLoading || isIncidentsLoading;
+
   return (
     <div className="space-y-6">
-      {/* Header section */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          System Overview
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Real-time monitoring metrics and service health diagnostics.
-        </p>
+      {/* Header section with manual refresh button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            System Overview
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Real-time monitoring telemetry, service health diagnostics, and incident markers.
+          </p>
+        </div>
+
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleRefreshAll}
+          disabled={isRefreshing}
+          className="self-start sm:self-auto h-9 text-xs gap-1.5 shadow-sm hover:shadow-md hover:border-primary/50"
+        >
+          <RefreshCw
+            className={`h-3.5 w-3.5 ${
+              isRefreshing ? "animate-spin text-primary" : ""
+            }`}
+          />
+          {isRefreshing ? "Refreshing Metrics..." : "Refresh Metrics"}
+        </Button>
       </div>
 
-      {/* Overview Cards */}
+      {/* KPI Cards Row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Services
-            </CardTitle>
-            <Server className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">12</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-emerald-500 font-medium">10 Healthy</span> · 2 Degraded
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Total Services"
+          value={stats?.totalServices ?? (services?.length || 0)}
+          icon={Server}
+          variant="mint"
+          isLoading={showShimmer}
+          subtext={
+            <span className="font-semibold text-emerald-800 dark:text-emerald-300">
+              {stats?.healthyServices ?? services?.filter((s) => s.last_check_ok !== false).length ?? 0} Healthy Probes
+            </span>
+          }
+        />
 
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              System Uptime
-            </CardTitle>
-            <ShieldCheck className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">99.94%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Last 30 days overall
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="System Uptime"
+          value={stats ? `${stats.avgUptimePercentage}%` : "100%"}
+          icon={ShieldCheck}
+          variant="teal"
+          // badge={<span className="text-white text-[11px]">24h Aggregate</span>}
+          isLoading={showShimmer}
+          subtext="High reliability SLA score"
+        />
 
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Incidents
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">1</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Minor DB latency warning
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Active Incidents"
+          value={stats?.activeIncidentsCount ?? 0}
+          icon={AlertTriangle}
+          variant="default"
+          iconClassName={
+            stats?.activeIncidentsCount ? "text-destructive animate-pulse" : "text-amber-500"
+          }
+          isLoading={showShimmer}
+          subtext={
+            stats?.activeIncidentsCount ? (
+              <span className="text-destructive font-semibold">Requires immediate triage</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">All systems nominal</span>
+            )
+          }
+        />
 
-        <Card className="shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Average Latency
-            </CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">42 ms</div>
-            <p className="text-xs text-emerald-500 font-medium mt-1">
-              ↓ 4ms from last hour
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Worst Latency"
+          value={stats ? `${stats.worstP95LatencyMs} ms` : "—"}
+          icon={Activity}
+          variant="default"
+          iconClassName="text-primary"
+          isLoading={showShimmer}
+          subtext="Max response threshold (p95)"
+        />
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2 shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Service Health Matrix</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: "Auth Microservice", status: "Healthy", latency: "18ms", load: "12%" },
-                { name: "PostgreSQL Primary", status: "Healthy", latency: "4ms", load: "34%" },
-                { name: "Redis In-Memory Cache", status: "Healthy", latency: "1ms", load: "8%" },
-                { name: "Payment Gateway Adapter", status: "Degraded", latency: "340ms", load: "78%" },
-                { name: "Notification Queue Worker", status: "Healthy", latency: "22ms", load: "19%" },
-              ].map((service) => (
-                <div
-                  key={service.name}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        service.status === "Healthy" ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
-                      }`}
-                    />
-                    <span className="font-medium text-foreground">{service.name}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>{service.latency}</span>
-                    <span className="w-12 text-right">{service.load}</span>
-                    <span
-                      className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
-                        service.status === "Healthy"
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                      }`}
-                    >
-                      {service.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Service Health Grid */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">Service Health Matrix</h2>
+          <span className="text-xs text-muted-foreground">
+            {services?.length || 0} active probes
+          </span>
+        </div>
+        <ServiceHealthGrid services={services || []} isLoading={showShimmer} />
+      </div>
 
-        <Card className="shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Node Metrics</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Cpu className="h-3.5 w-3.5 text-primary" /> CPU Utilization
-                </span>
-                <span className="text-foreground font-semibold">28%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary rounded-full" style={{ width: "28%" }} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Activity className="h-3.5 w-3.5 text-emerald-500" /> RAM Memory
-                </span>
-                <span className="text-foreground font-semibold">6.2 GB / 16 GB</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: "38.75%" }} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <HardDrive className="h-3.5 w-3.5 text-amber-500" /> Disk Storage
-                </span>
-                <span className="text-foreground font-semibold">142 GB / 500 GB</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: "28.4%" }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Recent Incidents Table */}
+      <div className="space-y-3">
+        <RecentIncidentsTable incidents={incidents || []} isLoading={showShimmer} />
       </div>
     </div>
   );

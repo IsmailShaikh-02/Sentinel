@@ -1,32 +1,70 @@
 
-.santura-logo {
+.sentinel-logo {
   display: block;
+
+  /* Show pointer when hovering the logo */
+  cursor: pointer;
 }
 
-.santura-outer-ring,
-.santura-inner-ring {
+.sentinel-outer-ring,
+.sentinel-inner-ring {
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.santura-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
+
+/* =========================================================
+   ACTIVE ANIMATION
+   ========================================================= */
+
+.sentinel-outer-ring.sentinel-animate {
+  animation: sentinelOuterRotation 3s ease-in-out forwards;
 }
 
-/*
-  The rotation itself is controlled by React
-  using requestAnimationFrame.
+.sentinel-inner-ring.sentinel-animate {
+  animation: sentinelInnerRotation 3s ease-in-out forwards;
+}
 
-  No CSS animation timing is required here.
-*/
 
-/*
-  Respect users who prefer reduced motion.
-*/
+/* =========================================================
+   OUTER RING
+   Clockwise
+   ========================================================= */
+
+@keyframes sentinelOuterRotation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   INNER RING
+   Counter-clockwise
+   ========================================================= */
+
+@keyframes sentinelInnerRotation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
-  .santura-outer-ring,
-  .santura-inner-ring {
-    transition: none;
+  .sentinel-outer-ring.sentinel-animate,
+  .sentinel-inner-ring.sentinel-animate {
+    animation: none;
   }
 }
