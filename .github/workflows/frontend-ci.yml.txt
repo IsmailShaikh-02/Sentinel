@@ -30,4 +30,4 @@ jobs:
       - name: Run Build
         run: npm run build
         env:
-          VITE_API_URL: https://api.placeholder.com
+          VITE_API_URL: https://sentinel-seven-olive.vercel.app
