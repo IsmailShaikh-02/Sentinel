@@ -6,14 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "worker": "tsx watch src/worker.ts",
-    "fleet": "tsx src/scripts/toy-fleet.ts",
-    "clean:services": "tsx src/scripts/clean-services.ts",
-    "clean:redis": "tsx src/scripts/clean-redis.ts",
-    "clean:all": "npm run clean:services && npm run clean:redis",
-    "test:heartbeat": "tsx src/scripts/toy-heartbeat.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/db/migrate.ts"
+    "migrate": "node dist/db/migrate.js",
+    "start": "concurrently \"node dist/index.js\" \"node dist/worker.js\""
   },
   "keywords": [],
   "author": "",
@@ -23,6 +19,7 @@
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
     "bullmq": "^6.3.6",
+    "concurrently": "^10.0.5",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
