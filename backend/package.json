@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "worker": "tsx watch src/worker.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "migrate": "node dist/db/migrate.js",
-    "start": "concurrently \"node dist/index.js\" \"node dist/worker.js\""
-  },
+  "dev": "tsx watch src/index.ts",
+  "worker": "tsx watch src/worker.ts",
+  "build": "tsc",
+  "typecheck": "tsc --noEmit",
+  "migrate": "node dist/db/migrate.js",
+  "start": "concurrently \"node dist/index.js\" \"node dist/worker.js\""
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

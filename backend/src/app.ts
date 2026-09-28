@@ -12,7 +12,13 @@ import { generalLimiter } from './middlewares/rate-limit.middleware.js';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://sentinel-seven-olive.vercel.app'
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Health check endpoint
