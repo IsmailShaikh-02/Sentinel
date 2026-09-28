@@ -12,6 +12,9 @@ import { generalLimiter } from './middlewares/rate-limit.middleware.js';
 
 const app = express();
 
+// Trust reverse proxy headers (Render, Heroku, AWS ELB, Cloudflare, etc.)
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: [
     'http://localhost:5173',

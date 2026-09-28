@@ -3,12 +3,13 @@ import rateLimit from 'express-rate-limit';
 
 // Strict limiter for authentication to prevent brute-force attacks
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login/register attempts per window
+  windowMs: 10 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each client IP to 5 FAILED attempts per window
+  skipSuccessfulRequests: true, // Do not count 2xx responses against the limit
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   message: {
-    error: 'Too many authentication attempts. Please try again after 15 minutes.',
+    error: 'Too many authentication attempts. Please try again after 10 minutes.',
   },
 });
 

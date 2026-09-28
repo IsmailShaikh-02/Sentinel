@@ -9,6 +9,7 @@
   "build": "tsc",
   "typecheck": "tsc --noEmit",
   "migrate": "node dist/db/migrate.js",
+  "demo": "tsx src/scripts/seed-demo.ts",
   "start": "concurrently \"node dist/index.js\" \"node dist/worker.js\""
 },
   "keywords": [],
