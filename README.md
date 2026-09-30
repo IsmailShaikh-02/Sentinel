@@ -28,13 +28,11 @@ Sentinel is an open-source, distributed uptime monitoring and dead man's switch 
 > **System Health Monitoring as Infrastructure Telemetry**: Sentinel operates analogously to an industrial monitoring system for web applications and asynchronous data pipelines. It continuously polls endpoint health, validates HTTP contracts, listens for expected cron heartbeats, and dispatches automated alerts across notification channels the moment a variance is detected.
 
 ### Navigation Links
-[Live Dashboard Demo](https://sentinel-seven-olive.vercel.app) | [API Health Endpoint](https://sentinel-seven-olive.vercel.app/health) | [Quick Start Guide](#quick-start)
+[Live Dashboard Demo](https://sentinel-seven-olive.vercel.app) | [Quick Start Guide](#quick-start)
 
 ---
 
 ## System Visuals & Demonstration
-
-*(Interface previews and telemetry assets. Placeholders below will be updated with live recordings).*
 
 | Service Health & Latency Dashboard | Incident Timeline & Escalation Logs |
 | :---: | :---: |
